@@ -2,7 +2,7 @@
 using System.IO;
 using System;
 
-namespace cs
+namespace eratosthenes
 {
     static class G {
         public static ulong n = 330829;
