@@ -72,27 +72,27 @@ namespace align
             return (alignedLine, lastWord);
         }
 
-        static (string, string) HandleBatch(StreamReader sr, string prevLastWord, int rowLen, int rep) {
+        static (string, string) HandleBatch(StreamReader sr, string prevLastWord, int rowLen) {
             string line = prevLastWord;
             List<string> words;
             for (int i = 0; i < rowLen; i++) {
                 int charInt = sr.Read();
                 if (charInt == -1) {
-                    return ("","");              //TODO Tady ať to vrátí něco jako null ať vim že je konec
+                    var ret = line.Split(separators, StringSplitOptions.RemoveEmptyEntries).ToList();     
+                    line = String.Join(" ", ret);
+                    return (line, null);              
                 }
                 char ch = (char)charInt;
                 if (IsSepartor(ch)) {
                     char nextCh = (char)sr.Peek();
-                    Console.WriteLine(line);
-                    // Console.WriteLine(nextCh);
                     if (IsSepartor(nextCh)) {
-                        Console.WriteLine("Jsems asd");
                         ReadAllSeparators(sr);
                         line += "\n";
                         return (line, "");
                     }
+                     
+                    ch = ' ';    // In case ch is '\n' or '\t', we want it to be ' '
                 }
-
                 line += ch;
             }
 
@@ -105,13 +105,15 @@ namespace align
             }else {
                 words = line.Split(separators, StringSplitOptions.RemoveEmptyEntries).ToList();     
 
-                // foreach (string word in words) {
-                //     Console.WriteLine(word);
-                // }
+                if (IsSepartor(line[line.Length - 1])) {
+                    string alignedLine = FillGaps(words, 1);
+                    return (alignedLine, "");
+                }
 
-                (string alignedLine, string lastWord) = LineOverflow(words);
 
-                return (alignedLine, lastWord);
+                // (string alignedLine, string lastWord) = LineOverflow(words);
+                return LineOverflow(words);
+
             }
         }
 
@@ -119,15 +121,19 @@ namespace align
         {
             using (StreamReader sr = new StreamReader(inFileName)) {
                 using (StreamWriter sw = new StreamWriter(outFileName)) {
-                    int i = 0;
                     string prevLastWord = "";
-                    while (i < 23) {
-                        (string alignedLine, string lastWord) = HandleBatch(sr, prevLastWord, rowLen - prevLastWord.Length, i);
+                    while (true) {
+                        (string alignedLine, string lastWord) = HandleBatch(sr, prevLastWord, rowLen - prevLastWord.Length);
 
+                        // Console.WriteLine(lastWord);
                         sw.Write(alignedLine);
                         sw.WriteLine();
 
-                        i++;
+                        if (lastWord is null) {
+                            break;
+                        }
+                        if (lastWord == "\n" || lastWord == "\t" || lastWord == " ")
+                            lastWord = "";
                         prevLastWord = lastWord;
                     }
 
@@ -137,20 +143,20 @@ namespace align
 
         static void Main(string[] args)
         {
-            // if (!ValidArgs(args)) {
-            //     Console.WriteLine("Argument Error");
-            //     return;
-            // }
+            if (!ValidArgs(args)) {
+                Console.WriteLine("Argument Error");
+                return;
+            }
 
-            // // Podmínka pro neexistující soubor
-            // try {
-                // AlignFile(args[0], args[1], Convert.ToInt32(args[2]));
-            // }
+            // Podmínka pro neexistující soubor
+            try {
+                AlignFile(args[0], args[1], Convert.ToInt32(args[2]));
+            }
 
-            // catch {
-            //     Console.WriteLine("File Error");
-            // }
-            AlignFile("input.txt", "out.txt", 40);
+            catch {
+                Console.WriteLine("File Error");
+            }
+            // AlignFile("input.txt", "out.txt", 40);
 
         }
 
