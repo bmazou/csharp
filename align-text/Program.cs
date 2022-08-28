@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.Win32.SafeHandles;
+using System.Data;
+using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
@@ -56,8 +58,8 @@ namespace align
             return (alignedLine, lastWord);
         }
 
-        static (string, string) HandleBatch(StreamReader sr, StreamWriter sw, int rowLen) {
-            string line = "";
+        static (string, string) HandleBatch(StreamReader sr, string prevLastWord, int rowLen, int rep) {
+            string line = prevLastWord;
             List<string> words;
             for (int i = 0; i < rowLen; i++) {
                 int charInt = sr.Read();
@@ -67,28 +69,51 @@ namespace align
                 char ch = (char)charInt;
                 line += ch;
             }
-
             char nextChar = (char)sr.Peek();
-            if (separators.Contains(nextChar)) {        
-                return (line, "");                // Next char is a separator, so return the line without any change
+            if (separators.Contains(nextChar)) {   
+                // Next char is a separator, so move the reader  
+                sr.Read();      
+                // and return the line without any change 
+                return (line, "");                
             }else {
                 words = line.Split(separators, StringSplitOptions.RemoveEmptyEntries).ToList();     
                 // var overflowOutput = LineOverflow(words);
                 (string alignedLine, string lastWord) = LineOverflow(words);
+
+                // if (rep == 5) {
+                //     Console.WriteLine(lastWord);
+                // }
+
                 return (alignedLine, lastWord);
-
-
             }
-
         }
 
+        //TODO Samotný odstavce upravuje skvěle, ten jen vyřešit tu indentaci apod. 
         static void AlignFile(string inFileName, string outFileName, int rowLen)
         {
             using (StreamReader sr = new StreamReader(inFileName)) {
                 using (StreamWriter sw = new StreamWriter(outFileName)) {
-                    (string alignedLine, string lastWord) = HandleBatch(sr, sw, rowLen);
-                    Console.WriteLine(alignedLine);
-                    Console.WriteLine(lastWord);
+                    int i = 0;
+                    string prevLastWord = "";
+                    while (i < 10) {
+                        (string alignedLine, string lastWord) = HandleBatch(sr, prevLastWord, rowLen - prevLastWord.Length, i);
+                        
+                        // if (lastWord == "") {
+                        //     Console.WriteLine(alignedLine);
+                        //     Console.WriteLine(i);
+                        // }
+
+                        if (i == 5) {
+                            // Console.WriteLine(alignedLine);
+                            // Console.WriteLine(lastWord);
+                        }
+
+                        sw.Write(alignedLine);
+                        sw.WriteLine();
+
+                        i++;
+                        prevLastWord = lastWord;
+                    }
 
                 }
             }
