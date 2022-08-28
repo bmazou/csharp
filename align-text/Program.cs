@@ -19,14 +19,28 @@ namespace align
             
             try {
                 int num = Int32.Parse(args[2]);
-                if (num <= 0) 
-                    return false;
+                return (num > 0);
             }
             catch {
                 return false;
             }
+        }
 
-            return true;
+        static bool IsSepartor(char ch) {
+            return separators.Contains(ch);
+        }
+
+        //* Reads all following whitespaces, until it hits a character 
+        static void ReadAllSeparators(StreamReader sr) {
+            while (true) {
+                char nextChar = (char)sr.Peek();
+                if (IsSepartor(nextChar)) {   
+                    // Next char is a separator, so move the reader  
+                    sr.Read();
+                }else {
+                    return;
+                }
+            }
         }
 
         static string FillGaps(List<string> words, int gapCount) {
@@ -67,46 +81,48 @@ namespace align
                     return ("","");              //TODO Tady ať to vrátí něco jako null ať vim že je konec
                 }
                 char ch = (char)charInt;
+                if (IsSepartor(ch)) {
+                    char nextCh = (char)sr.Peek();
+                    Console.WriteLine(line);
+                    // Console.WriteLine(nextCh);
+                    if (IsSepartor(nextCh)) {
+                        Console.WriteLine("Jsems asd");
+                        ReadAllSeparators(sr);
+                        line += "\n";
+                        return (line, "");
+                    }
+                }
+
                 line += ch;
             }
+
             char nextChar = (char)sr.Peek();
-            if (separators.Contains(nextChar)) {   
+            if (IsSepartor(nextChar)) {   
                 // Next char is a separator, so move the reader  
                 sr.Read();      
                 // and return the line without any change 
                 return (line, "");                
             }else {
                 words = line.Split(separators, StringSplitOptions.RemoveEmptyEntries).ToList();     
-                // var overflowOutput = LineOverflow(words);
-                (string alignedLine, string lastWord) = LineOverflow(words);
 
-                // if (rep == 5) {
-                //     Console.WriteLine(lastWord);
+                // foreach (string word in words) {
+                //     Console.WriteLine(word);
                 // }
+
+                (string alignedLine, string lastWord) = LineOverflow(words);
 
                 return (alignedLine, lastWord);
             }
         }
 
-        //TODO Samotný odstavce upravuje skvěle, ten jen vyřešit tu indentaci apod. 
         static void AlignFile(string inFileName, string outFileName, int rowLen)
         {
             using (StreamReader sr = new StreamReader(inFileName)) {
                 using (StreamWriter sw = new StreamWriter(outFileName)) {
                     int i = 0;
                     string prevLastWord = "";
-                    while (i < 10) {
+                    while (i < 23) {
                         (string alignedLine, string lastWord) = HandleBatch(sr, prevLastWord, rowLen - prevLastWord.Length, i);
-                        
-                        // if (lastWord == "") {
-                        //     Console.WriteLine(alignedLine);
-                        //     Console.WriteLine(i);
-                        // }
-
-                        if (i == 5) {
-                            // Console.WriteLine(alignedLine);
-                            // Console.WriteLine(lastWord);
-                        }
 
                         sw.Write(alignedLine);
                         sw.WriteLine();
